@@ -1,5 +1,6 @@
 package com.helpdesk.helpdesk.history.entity;
 
+import com.helpdesk.helpdesk.history.enums.TicketHistoryAction;
 import com.helpdesk.helpdesk.ticket.entity.Ticket;
 import com.helpdesk.helpdesk.user.entity.User;
 import jakarta.persistence.*;
@@ -28,8 +29,9 @@ public class TicketHistory {
     @JoinColumn(name = "performed_by")
     private User performedBy;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private String action;
+    private TicketHistoryAction action;
 
     @Column(name = "old_value", columnDefinition = "TEXT")
     private String oldValue;
