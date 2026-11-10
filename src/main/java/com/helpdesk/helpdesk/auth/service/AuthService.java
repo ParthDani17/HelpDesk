@@ -11,6 +11,9 @@ import com.helpdesk.helpdesk.user.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import com.helpdesk.helpdesk.auth.dto.RegisterResponse;
+import com.helpdesk.helpdesk.security.service.JwtService;
+import com.helpdesk.helpdesk.auth.dto.LoginResponse;
+import com.helpdesk.helpdesk.security.user.HelpDeskUserDetails;
 
 @Service
 public class AuthService {
@@ -18,15 +21,18 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     public AuthService(
             AuthenticationManager authenticationManager,
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService) {
 
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     public Authentication authenticate(String email, String password) {
@@ -35,6 +41,30 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(email, password);
 
         return authenticationManager.authenticate(authentication);
+    }
+
+    public LoginResponse login(String email, String password) {
+
+        Authentication authentication = authenticate(email, password);
+
+        HelpDeskUserDetails userDetails =
+                (HelpDeskUserDetails) authentication.getPrincipal();
+
+        String accessToken = jwtService.generateAccessToken(
+                userDetails.getId(),
+                userDetails.getRole()
+        );
+
+        return new LoginResponse(
+                accessToken,
+                "Bearer",
+                jwtService.getAccessTokenExpirationSeconds(),
+                userDetails.getId(),
+                userDetails.getName(),
+                userDetails.getUsername(),
+                userDetails.getRole(),
+                userDetails.getCreatedAt()
+        );
     }
 
     @Transactional

@@ -4,6 +4,9 @@ import com.helpdesk.helpdesk.user.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import com.helpdesk.helpdesk.user.enums.UserRole;
+import java.time.Instant;
+import java.util.UUID;
 
 import java.util.Collection;
 import java.util.List;
@@ -31,6 +34,22 @@ public class HelpDeskUserDetails implements UserDetails {
     @Override
     public String getUsername() {
         return user.getEmail();
+    }
+
+    public UUID getId() {
+        return user.getId();
+    }
+
+    public String getName() {
+        return user.getName();
+    }
+
+    public UserRole getRole() {
+        return user.getRole();
+    }
+
+    public Instant getCreatedAt() {
+        return user.getCreatedAt();
     }
 
     @Override

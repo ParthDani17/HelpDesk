@@ -42,17 +42,8 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-//                .authorizeHttpRequests(auth -> auth
-//                        .requestMatchers("/api/v1/auth/**").permitAll()
-//                        .anyRequest().authenticated()
-//                );
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers(
-                                "/api/v1/test/jwt/generate/**",
-                                "/api/v1/test/jwt/validate"
-                        ).permitAll()
-                        .requestMatchers("/api/v1/test/jwt/protected").authenticated()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception
