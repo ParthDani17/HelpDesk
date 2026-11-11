@@ -15,6 +15,12 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RefreshToken {
 
+    public RefreshToken(User user, String tokenHash, Instant expiresAt) {
+        this.user = user;
+        this.tokenHash = tokenHash;
+        this.expiresAt = expiresAt;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -38,5 +44,23 @@ public class RefreshToken {
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now();
+    }
+
+    public boolean isRevoked() {
+        return revokedAt != null;
+    }
+
+    public boolean isExpired(Instant now) {
+        return !expiresAt.isAfter(now);
+    }
+
+    public boolean isUsable(Instant now) {
+        return !isRevoked() && !isExpired(now);
+    }
+
+    public void revoke(Instant now) {
+        if (revokedAt == null) {
+            revokedAt = now;
+        }
     }
 }

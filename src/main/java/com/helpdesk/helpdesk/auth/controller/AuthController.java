@@ -9,6 +9,8 @@ import com.helpdesk.helpdesk.auth.dto.RegisterRequest;
 import com.helpdesk.helpdesk.auth.dto.RegisterResponse;
 import org.springframework.http.HttpStatus;
 import com.helpdesk.helpdesk.auth.dto.LoginResponse;
+import com.helpdesk.helpdesk.auth.dto.RefreshRequest;
+import com.helpdesk.helpdesk.auth.dto.RefreshResponse;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -42,4 +44,16 @@ public class AuthController {
                 .status(HttpStatus.CREATED)
                 .body(response);
     }
+
+
+    @PostMapping("/refresh")
+    public ResponseEntity<RefreshResponse> refresh(
+            @Valid @RequestBody RefreshRequest refreshRequest) {
+
+        RefreshResponse response =
+                authService.refresh(refreshRequest.refreshToken());
+
+        return ResponseEntity.ok(response);
+    }
+
 }

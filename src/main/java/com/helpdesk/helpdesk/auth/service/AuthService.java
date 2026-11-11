@@ -14,6 +14,11 @@ import com.helpdesk.helpdesk.auth.dto.RegisterResponse;
 import com.helpdesk.helpdesk.security.service.JwtService;
 import com.helpdesk.helpdesk.auth.dto.LoginResponse;
 import com.helpdesk.helpdesk.security.user.HelpDeskUserDetails;
+import com.helpdesk.helpdesk.refreshToken.service.RefreshTokenService;
+import com.helpdesk.helpdesk.auth.dto.RefreshResponse;
+import com.helpdesk.helpdesk.refreshToken.entity.RefreshToken;
+import com.helpdesk.helpdesk.auth.dto.RefreshResponse;
+import com.helpdesk.helpdesk.refreshToken.service.RefreshTokenRotationResult;
 
 @Service
 public class AuthService {
@@ -22,17 +27,20 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthService(
             AuthenticationManager authenticationManager,
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService) {
+            JwtService jwtService,
+            RefreshTokenService refreshTokenService) {
 
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     public Authentication authenticate(String email, String password) {
@@ -55,8 +63,13 @@ public class AuthService {
                 userDetails.getRole()
         );
 
+        String refreshToken = refreshTokenService.createRefreshToken(
+                userDetails.getId()
+        );
+
         return new LoginResponse(
                 accessToken,
+                refreshToken,
                 "Bearer",
                 jwtService.getAccessTokenExpirationSeconds(),
                 userDetails.getId(),
@@ -93,4 +106,47 @@ public class AuthService {
                 savedUser.getCreatedAt()
         );
     }
+
+//    public RefreshResponse refresh(String token) {
+//
+//        RefreshToken oldRefreshToken =
+//                refreshTokenService.validateRefreshToken(token);
+//
+//        User user = oldRefreshToken.getUser();
+//
+//        String newRefreshToken =
+//                refreshTokenService.rotateRefreshToken(token);
+//
+//        String newAccessToken = jwtService.generateAccessToken(
+//                user.getId(),
+//                user.getRole()
+//        );
+//
+//        return new RefreshResponse(
+//                newAccessToken,
+//                newRefreshToken,
+//                "Bearer",
+//                jwtService.getAccessTokenExpirationSeconds()
+//        );
+//    }
+
+
+    @Transactional
+    public RefreshResponse refresh(String token) {
+        RefreshTokenRotationResult rotationResult =
+                refreshTokenService.rotateRefreshToken(token);
+
+        String newAccessToken = jwtService.generateAccessToken(
+                rotationResult.userId(),
+                rotationResult.role()
+        );
+
+        return new RefreshResponse(
+                newAccessToken,
+                rotationResult.refreshToken(),
+                "Bearer",
+                jwtService.getAccessTokenExpirationSeconds()
+        );
+    }
+
 }
