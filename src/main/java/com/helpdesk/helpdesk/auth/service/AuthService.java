@@ -107,30 +107,6 @@ public class AuthService {
         );
     }
 
-//    public RefreshResponse refresh(String token) {
-//
-//        RefreshToken oldRefreshToken =
-//                refreshTokenService.validateRefreshToken(token);
-//
-//        User user = oldRefreshToken.getUser();
-//
-//        String newRefreshToken =
-//                refreshTokenService.rotateRefreshToken(token);
-//
-//        String newAccessToken = jwtService.generateAccessToken(
-//                user.getId(),
-//                user.getRole()
-//        );
-//
-//        return new RefreshResponse(
-//                newAccessToken,
-//                newRefreshToken,
-//                "Bearer",
-//                jwtService.getAccessTokenExpirationSeconds()
-//        );
-//    }
-
-
     @Transactional
     public RefreshResponse refresh(String token) {
         RefreshTokenRotationResult rotationResult =
@@ -147,6 +123,16 @@ public class AuthService {
                 "Bearer",
                 jwtService.getAccessTokenExpirationSeconds()
         );
+    }
+
+    @Transactional
+    public void logout(String refreshToken) {
+        refreshTokenService.revokeRefreshToken(refreshToken);
+    }
+
+    @Transactional
+    public int logoutFromAllDevices(String refreshToken) {
+        return refreshTokenService.logoutFromAllDevices(refreshToken);
     }
 
 }

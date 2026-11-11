@@ -56,4 +56,24 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @Valid @RequestBody RefreshRequest refreshRequest) {
+
+        authService.logout(refreshRequest.refreshToken());
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/logout-all")
+    public ResponseEntity<Void> logoutFromAllDevices(
+            @Valid @RequestBody RefreshRequest refreshRequest) {
+
+        authService.logoutFromAllDevices(refreshRequest.refreshToken());
+
+        return ResponseEntity.noContent().build();
+    }
+
+
 }

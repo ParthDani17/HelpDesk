@@ -138,6 +138,46 @@ public class RefreshTokenService {
                 .encodeToString(randomBytes);
     }
 
+
+    @Transactional
+    public void revokeRefreshToken(String token) {
+        String tokenHash = hashToken(token);
+
+        RefreshToken refreshToken = refreshTokenRepository
+                .findByTokenHashForUpdate(tokenHash)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Invalid refresh token"));
+
+        if (!refreshToken.isUsable(Instant.now())) {
+            throw new IllegalArgumentException("Refresh token is expired or revoked");
+        }
+
+        refreshToken.revoke(Instant.now());
+    }
+
+
+    @Transactional
+    public int logoutFromAllDevices(String token) {
+        String tokenHash = hashToken(token);
+
+        RefreshToken refreshToken = refreshTokenRepository
+                .findByTokenHashForUpdate(tokenHash)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Invalid refresh token"));
+
+        Instant now = Instant.now();
+
+        if (!refreshToken.isUsable(now)
+                || !refreshToken.getUser().isActive()) {
+            throw new IllegalArgumentException("Invalid refresh token");
+        }
+
+        return refreshTokenRepository.revokeAllActiveTokens(
+                refreshToken.getUser().getId(),
+                now
+        );
+    }
+
     public String hashToken(String token) {
 
         try {
