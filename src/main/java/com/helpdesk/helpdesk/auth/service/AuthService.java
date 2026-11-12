@@ -19,6 +19,7 @@ import com.helpdesk.helpdesk.auth.dto.RefreshResponse;
 import com.helpdesk.helpdesk.refreshToken.entity.RefreshToken;
 import com.helpdesk.helpdesk.auth.dto.RefreshResponse;
 import com.helpdesk.helpdesk.refreshToken.service.RefreshTokenRotationResult;
+import com.helpdesk.helpdesk.refreshToken.service.RefreshTokenCreationResult;
 
 @Service
 public class AuthService {
@@ -58,14 +59,18 @@ public class AuthService {
         HelpDeskUserDetails userDetails =
                 (HelpDeskUserDetails) authentication.getPrincipal();
 
+
+        RefreshTokenCreationResult creationResult =
+                refreshTokenService.createRefreshToken(userDetails.getId());
+
+        String refreshToken = creationResult.refreshToken();
+
         String accessToken = jwtService.generateAccessToken(
                 userDetails.getId(),
-                userDetails.getRole()
+                userDetails.getRole(),
+                creationResult.sessionId()
         );
 
-        String refreshToken = refreshTokenService.createRefreshToken(
-                userDetails.getId()
-        );
 
         return new LoginResponse(
                 accessToken,
@@ -114,7 +119,8 @@ public class AuthService {
 
         String newAccessToken = jwtService.generateAccessToken(
                 rotationResult.userId(),
-                rotationResult.role()
+                rotationResult.role(),
+                rotationResult.sessionId()
         );
 
         return new RefreshResponse(

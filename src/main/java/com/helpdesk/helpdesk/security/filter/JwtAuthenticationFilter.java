@@ -14,6 +14,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import com.helpdesk.helpdesk.refreshToken.service.RefreshTokenService;
+import io.jsonwebtoken.JwtException;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -23,12 +25,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final RefreshTokenService refreshTokenService;
 
     public JwtAuthenticationFilter(
             JwtService jwtService,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            RefreshTokenService refreshTokenService) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Override
@@ -46,34 +51,47 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = authorizationHeader.substring(7);
 
-        if (!jwtService.isTokenValid(token)) {
-            filterChain.doFilter(request, response);
-            return;
+        try {
+            if (!jwtService.isTokenValid(token)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            UUID userId = UUID.fromString(jwtService.extractUserId(token));
+            UUID sessionId = jwtService.extractSessionId(token);
+
+            User user = userRepository.findById(userId).orElse(null);
+
+            if (user == null || !user.isActive()) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            boolean sessionActive = refreshTokenService.isSessionActive(sessionId, userId);
+
+            if (!sessionActive) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            HelpDeskUserDetails userDetails = new HelpDeskUserDetails(user);
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+
+            authentication.setDetails(
+                    new WebAuthenticationDetailsSource().buildDetails(request)
+            );
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        } catch (JwtException | IllegalArgumentException exception) {
+            SecurityContextHolder.clearContext();
         }
-
-        UUID userId = UUID.fromString(jwtService.extractUserId(token));
-
-        User user = userRepository.findById(userId).orElse(null);
-
-        if (user == null || !user.isActive()) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        HelpDeskUserDetails userDetails = new HelpDeskUserDetails(user);
-
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
-
-        authentication.setDetails(
-                new WebAuthenticationDetailsSource().buildDetails(request)
-        );
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
 
         filterChain.doFilter(request, response);
     }

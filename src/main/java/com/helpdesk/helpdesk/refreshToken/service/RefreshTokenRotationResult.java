@@ -7,6 +7,6 @@ import java.util.UUID;
 public record RefreshTokenRotationResult(
         String refreshToken,
         UUID userId,
-        UserRole role
-) {
-}
+        UserRole role,
+        UUID sessionId
+) {}

@@ -15,8 +15,14 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RefreshToken {
 
-    public RefreshToken(User user, String tokenHash, Instant expiresAt) {
+    public RefreshToken(
+            User user,
+            UUID sessionId,
+            String tokenHash,
+            Instant expiresAt
+    ) {
         this.user = user;
+        this.sessionId = sessionId;
         this.tokenHash = tokenHash;
         this.expiresAt = expiresAt;
     }
@@ -40,6 +46,9 @@ public class RefreshToken {
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
+    @Column(name = "session_id", nullable = false)
+    private UUID sessionId;
 
     @PrePersist
     protected void onCreate() {

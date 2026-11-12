@@ -53,7 +53,7 @@ public class JwtService {
         return claimsJws.getPayload();
     }
 
-    public String generateAccessToken(UUID userId, UserRole role) {
+    public String generateAccessToken(UUID userId, UserRole role, UUID sessionId) {
 
         Instant now = Instant.now();
         Instant expiration = now.plusMillis(accessTokenExpiration);
@@ -61,6 +61,7 @@ public class JwtService {
         return Jwts.builder()
                 .subject(userId.toString())
                 .claim("role", role.name())
+                .claim("sessionId", sessionId.toString())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiration))
                 .signWith(secretKey, Jwts.SIG.HS256)
@@ -79,6 +80,11 @@ public class JwtService {
 
     public long getAccessTokenExpirationSeconds() {
         return accessTokenExpiration / 1000;
+    }
+
+    public UUID extractSessionId(String token) {
+        String sessionId = extractAllClaims(token).get("sessionId", String.class);
+        return UUID.fromString(sessionId);
     }
 
     public String extractUserId(String token) {

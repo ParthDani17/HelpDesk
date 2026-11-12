@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import com.helpdesk.helpdesk.refreshToken.entity.RefreshToken;
 import com.helpdesk.helpdesk.user.entity.User;
 import org.springframework.transaction.annotation.Transactional;
+import com.helpdesk.helpdesk.refreshToken.service.RefreshTokenCreationResult;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -36,7 +37,7 @@ public class RefreshTokenService {
     }
 
     @Transactional
-    public String createRefreshToken(UUID userId) {
+    public RefreshTokenCreationResult createRefreshToken(UUID userId) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -47,15 +48,21 @@ public class RefreshTokenService {
 
         Instant expiresAt = Instant.now().plusMillis(refreshTokenExpiration);
 
+        UUID sessionId = UUID.randomUUID();
+
         RefreshToken refreshTokenEntity = new RefreshToken(
                 user,
+                sessionId,
                 tokenHash,
                 expiresAt
         );
 
         refreshTokenRepository.save(refreshTokenEntity);
 
-        return refreshToken;
+        return new RefreshTokenCreationResult(
+                refreshToken,
+                sessionId
+        );
     }
 
     @Transactional(readOnly = true)
@@ -112,18 +119,21 @@ public class RefreshTokenService {
 
         Instant newExpiresAt = now.plusMillis(refreshTokenExpiration);
 
-        RefreshToken newRefreshTokenEntity = new RefreshToken(
-                user,
-                newTokenHash,
-                newExpiresAt
-        );
+        RefreshToken newRefreshTokenEntity =
+                new RefreshToken(
+                        user,
+                        oldRefreshToken.getSessionId(),
+                        newTokenHash,
+                        newExpiresAt
+                );
 
         refreshTokenRepository.save(newRefreshTokenEntity);
 
         return new RefreshTokenRotationResult(
                 newRefreshToken,
                 user.getId(),
-                user.getRole()
+                user.getRole(),
+                oldRefreshToken.getSessionId()
         );
     }
 
@@ -176,6 +186,16 @@ public class RefreshTokenService {
                 refreshToken.getUser().getId(),
                 now
         );
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isSessionActive(UUID sessionId, UUID userId) {
+        return refreshTokenRepository
+                .existsBySessionIdAndUserIdAndRevokedAtIsNullAndExpiresAtAfter(
+                        sessionId,
+                        userId,
+                        Instant.now()
+                );
     }
 
     public String hashToken(String token) {

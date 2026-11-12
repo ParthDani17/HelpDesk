@@ -1,0 +1,3 @@
+ALTER TABLE refresh_tokens
+    ADD COLUMN session_id UUID;
+

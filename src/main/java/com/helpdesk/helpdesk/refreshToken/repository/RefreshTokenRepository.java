@@ -37,4 +37,10 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
             @Param("now") Instant now
     );
 
+    boolean existsBySessionIdAndUserIdAndRevokedAtIsNullAndExpiresAtAfter(
+            UUID sessionId,
+            UUID userId,
+            Instant now
+    );
+
 }
