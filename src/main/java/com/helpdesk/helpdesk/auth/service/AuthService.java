@@ -20,6 +20,7 @@ import com.helpdesk.helpdesk.refreshToken.entity.RefreshToken;
 import com.helpdesk.helpdesk.auth.dto.RefreshResponse;
 import com.helpdesk.helpdesk.refreshToken.service.RefreshTokenRotationResult;
 import com.helpdesk.helpdesk.refreshToken.service.RefreshTokenCreationResult;
+import com.helpdesk.helpdesk.common.exception.ConflictException;
 
 @Service
 public class AuthService {
@@ -91,7 +92,7 @@ public class AuthService {
         String email = registerRequest.email().trim().toLowerCase();
 
         if (userRepository.existsByEmailIgnoreCase(email)) {
-            throw new IllegalArgumentException("Email is already registered");
+            throw new ConflictException("Email is already registered");
         }
 
         User user = new User();
