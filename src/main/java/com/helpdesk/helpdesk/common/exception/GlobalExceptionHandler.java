@@ -11,6 +11,7 @@ import com.helpdesk.helpdesk.common.exception.ConflictException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
@@ -134,5 +135,24 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(apiError);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiError> handleResponseStatusException(
+            ResponseStatusException exception,
+            HttpServletRequest request
+    ) {
+
+        HttpStatus status = HttpStatus.valueOf(exception.getStatusCode().value());
+
+        ApiError apiError = new ApiError(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                exception.getReason(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(status).body(apiError);
     }
 }

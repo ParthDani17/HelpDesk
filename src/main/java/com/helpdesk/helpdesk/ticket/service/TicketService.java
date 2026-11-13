@@ -15,11 +15,21 @@ import com.helpdesk.helpdesk.ticket.enums.TicketPriority;
 import com.helpdesk.helpdesk.ticket.repository.TicketRepository;
 import com.helpdesk.helpdesk.user.entity.User;
 import com.helpdesk.helpdesk.user.repository.UserRepository;
+import org.apache.coyote.BadRequestException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.helpdesk.helpdesk.security.user.HelpDeskUserDetails;
 import com.helpdesk.helpdesk.user.enums.UserRole;
 import com.helpdesk.helpdesk.ticket.enums.TicketStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import com.helpdesk.helpdesk.ticket.dto.TicketPageResponse;
+import org.springframework.web.server.ResponseStatusException;
+import java.util.Set;
+
 import java.util.List;
 
 import java.util.UUID;
@@ -447,5 +457,89 @@ public class TicketService {
                         history.getCreatedAt()
                 ))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public TicketPageResponse getTickets(
+            HelpDeskUserDetails userDetails,
+            int page,
+            int size,
+            String sortBy,
+            String direction,
+            TicketStatus status,
+            TicketPriority priority,
+            UUID categoryId
+    ) {
+        if (page < 0 || size < 1 || size > 100) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid pagination parameters"
+            );
+        }
+
+        Set<String> allowedSortFields = Set.of(
+                "createdAt",
+                "updatedAt",
+                "priority",
+                "status",
+                "title"
+        );
+
+        if (!allowedSortFields.contains(sortBy)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid sorting field"
+            );
+        }
+
+        Sort.Direction sortDirection;
+
+        try {
+            sortDirection = Sort.Direction.fromString(direction);
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid sorting direction"
+            );
+        }
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(sortDirection, sortBy)
+        );
+
+        UUID creatorId = null;
+        UUID assigneeId = null;
+
+        if (userDetails.getRole() == UserRole.USER) {
+            creatorId = userDetails.getId();
+        } else if (userDetails.getRole() == UserRole.AGENT) {
+            assigneeId = userDetails.getId();
+        }
+
+        Page<Ticket> ticketPage = ticketRepository.findTicketsWithFilters(
+                creatorId,
+                assigneeId,
+                status,
+                priority,
+                categoryId,
+                pageable
+        );
+
+        List<TicketResponse> tickets = ticketPage.getContent()
+                .stream()
+                .map(this::mapToTicketResponse)
+                .toList();
+
+        return new TicketPageResponse(
+                tickets,
+                ticketPage.getNumber(),
+                ticketPage.getSize(),
+                ticketPage.getTotalElements(),
+                ticketPage.getTotalPages(),
+                ticketPage.isFirst(),
+                ticketPage.isLast()
+        );
     }
 }

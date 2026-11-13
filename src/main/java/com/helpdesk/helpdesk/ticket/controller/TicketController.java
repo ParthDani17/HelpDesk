@@ -2,6 +2,8 @@ package com.helpdesk.helpdesk.ticket.controller;
 
 import com.helpdesk.helpdesk.security.user.HelpDeskUserDetails;
 import com.helpdesk.helpdesk.ticket.dto.*;
+import com.helpdesk.helpdesk.ticket.enums.TicketPriority;
+import com.helpdesk.helpdesk.ticket.enums.TicketStatus;
 import com.helpdesk.helpdesk.ticket.service.TicketService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -48,10 +50,27 @@ public class TicketController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('USER', 'AGENT', 'ADMIN')")
-    public ResponseEntity<List<TicketResponse>> getTickets(
-            @AuthenticationPrincipal HelpDeskUserDetails userDetails
+    public ResponseEntity<TicketPageResponse> getTickets(
+            @AuthenticationPrincipal HelpDeskUserDetails userDetails,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "DESC") String direction,
+            @RequestParam(required = false) TicketStatus status,
+            @RequestParam(required = false) TicketPriority priority,
+            @RequestParam(required = false) UUID categoryId
     ) {
-        List<TicketResponse> response = ticketService.getTickets(userDetails);
+        TicketPageResponse response = ticketService.getTickets(
+                userDetails,
+                page,
+                size,
+                sortBy,
+                direction,
+                status,
+                priority,
+                categoryId
+        );
+
         return ResponseEntity.ok(response);
     }
 
