@@ -17,6 +17,20 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TicketHistory {
 
+    public TicketHistory(
+            Ticket ticket,
+            User performedBy,
+            TicketHistoryAction action,
+            String oldValue,
+            String newValue
+    ) {
+        this.ticket = ticket;
+        this.performedBy = performedBy;
+        this.action = action;
+        this.oldValue = oldValue;
+        this.newValue = newValue;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;

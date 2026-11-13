@@ -19,6 +19,21 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Ticket {
 
+    public Ticket(
+            String title,
+            String description,
+            TicketPriority priority,
+            User creator,
+            Category category
+    ) {
+        this.title = title;
+        this.description = description;
+        this.priority = priority;
+        this.creator = creator;
+        this.category = category;
+        this.status = TicketStatus.OPEN;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;

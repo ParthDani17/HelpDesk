@@ -17,6 +17,12 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Comment {
 
+    public Comment(Ticket ticket, User author, String content) {
+        this.ticket = ticket;
+        this.author = author;
+        this.content = content;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
