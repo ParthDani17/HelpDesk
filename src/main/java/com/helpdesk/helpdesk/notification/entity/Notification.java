@@ -18,6 +18,19 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Notification {
 
+    public Notification(
+            User user,
+            Ticket ticket,
+            String message,
+            NotificationType type
+    ) {
+        this.user = user;
+        this.ticket = ticket;
+        this.message = message;
+        this.type = type;
+        this.read = false;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;

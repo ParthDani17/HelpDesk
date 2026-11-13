@@ -1,8 +1,10 @@
 package com.helpdesk.helpdesk.user.repository;
 
 import com.helpdesk.helpdesk.user.entity.User;
+import com.helpdesk.helpdesk.user.enums.UserRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -11,4 +13,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmailIgnoreCase(String email);
 
     boolean existsByEmailIgnoreCase(String email);
+
+    List<User> findAllByRole(UserRole role);
 }

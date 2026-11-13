@@ -6,12 +6,14 @@ import com.helpdesk.helpdesk.ticket.enums.TicketPriority;
 import com.helpdesk.helpdesk.ticket.enums.TicketStatus;
 import com.helpdesk.helpdesk.ticket.service.TicketService;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.UUID;
 import java.util.List;
 
@@ -58,7 +60,15 @@ public class TicketController {
             @RequestParam(defaultValue = "DESC") String direction,
             @RequestParam(required = false) TicketStatus status,
             @RequestParam(required = false) TicketPriority priority,
-            @RequestParam(required = false) UUID categoryId
+            @RequestParam(required = false) UUID categoryId,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            Instant startDate,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            Instant endDate
     ) {
         TicketPageResponse response = ticketService.getTickets(
                 userDetails,
@@ -68,7 +78,10 @@ public class TicketController {
                 direction,
                 status,
                 priority,
-                categoryId
+                categoryId,
+                keyword,
+                startDate,
+                endDate
         );
 
         return ResponseEntity.ok(response);

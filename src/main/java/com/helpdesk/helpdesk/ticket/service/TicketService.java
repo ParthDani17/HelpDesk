@@ -28,6 +28,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import com.helpdesk.helpdesk.ticket.dto.TicketPageResponse;
 import org.springframework.web.server.ResponseStatusException;
+import com.helpdesk.helpdesk.notification.service.NotificationService;
+import com.helpdesk.helpdesk.notification.enums.NotificationType;
+
+import java.time.Instant;
 import java.util.Set;
 
 import java.util.List;
@@ -41,17 +45,20 @@ public class TicketService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final TicketHistoryRepository ticketHistoryRepository;
+    private final NotificationService notificationService;
 
     public TicketService(
             TicketRepository ticketRepository,
             CategoryRepository categoryRepository,
             UserRepository userRepository,
-            TicketHistoryRepository ticketHistoryRepository
+            TicketHistoryRepository ticketHistoryRepository,
+            NotificationService notificationService
     ) {
         this.ticketRepository = ticketRepository;
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
         this.ticketHistoryRepository = ticketHistoryRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -82,6 +89,19 @@ public class TicketService {
         );
 
         ticketHistoryRepository.save(history);
+
+        List<User> admins = userRepository.findAllByRole(UserRole.ADMIN);
+
+        for (User admin : admins) {
+            if (admin.isActive()) {
+                notificationService.createNotification(
+                        admin,
+                        savedTicket,
+                        "A new ticket has been created: " + savedTicket.getTitle(),
+                        NotificationType.TICKET_CREATED
+                );
+            }
+        }
 
         return new TicketResponse(
                 savedTicket.getId(),
@@ -468,7 +488,10 @@ public class TicketService {
             String direction,
             TicketStatus status,
             TicketPriority priority,
-            UUID categoryId
+            UUID categoryId,
+            String keyword,
+            Instant startDate,
+            Instant endDate
     ) {
         if (page < 0 || size < 1 || size > 100) {
             throw new ResponseStatusException(
@@ -518,12 +541,28 @@ public class TicketService {
             assigneeId = userDetails.getId();
         }
 
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Start date cannot be after end date"
+            );
+        }
+
+        if (keyword == null || keyword.isBlank()) {
+            keyword = "";
+        } else {
+            keyword = keyword.trim();
+        }
+
         Page<Ticket> ticketPage = ticketRepository.findTicketsWithFilters(
                 creatorId,
                 assigneeId,
                 status,
                 priority,
                 categoryId,
+                keyword,
+                startDate,
+                endDate,
                 pageable
         );
 

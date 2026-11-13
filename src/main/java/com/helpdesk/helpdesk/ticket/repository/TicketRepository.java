@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import com.helpdesk.helpdesk.ticket.enums.TicketPriority;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import java.time.Instant;
 
 import java.util.List;
 import java.util.UUID;
@@ -33,6 +34,13 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
         AND (:status IS NULL OR t.status = :status)
         AND (:priority IS NULL OR t.priority = :priority)
         AND (:categoryId IS NULL OR t.category.id = :categoryId)
+        AND (
+            :keyword = ''
+            OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            )
+            AND t.createdAt >= COALESCE(:startDate, t.createdAt)
+            AND t.createdAt <= COALESCE(:endDate, t.createdAt)
         """)
     Page<Ticket> findTicketsWithFilters(
             @Param("creatorId") UUID creatorId,
@@ -40,6 +48,9 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
             @Param("status") TicketStatus status,
             @Param("priority") TicketPriority priority,
             @Param("categoryId") UUID categoryId,
+            @Param("keyword") String keyword,
+            @Param("startDate") Instant startDate,
+            @Param("endDate") Instant endDate,
             Pageable pageable
     );
 }
