@@ -8,6 +8,7 @@ import com.helpdesk.helpdesk.history.entity.TicketHistory;
 import com.helpdesk.helpdesk.history.enums.TicketHistoryAction;
 import com.helpdesk.helpdesk.history.repository.TicketHistoryRepository;
 import com.helpdesk.helpdesk.ticket.dto.TicketCreateRequest;
+import com.helpdesk.helpdesk.ticket.dto.TicketHistoryResponse;
 import com.helpdesk.helpdesk.ticket.dto.TicketResponse;
 import com.helpdesk.helpdesk.ticket.entity.Ticket;
 import com.helpdesk.helpdesk.ticket.enums.TicketPriority;
@@ -420,5 +421,31 @@ public class TicketService {
         ticketHistoryRepository.save(history);
 
         return mapToTicketResponse(savedTicket);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TicketHistoryResponse> getTicketHistory(UUID ticketId) {
+
+        if (!ticketRepository.existsById(ticketId)) {
+            throw new ResourceNotFoundException("Ticket not found");
+        }
+
+        List<TicketHistory> histories =
+                ticketHistoryRepository.findAllByTicketIdOrderByCreatedAtAsc(ticketId);
+
+        return histories.stream()
+                .map(history -> new TicketHistoryResponse(
+                        history.getId(),
+                        history.getTicket().getId(),
+                        history.getPerformedBy() == null
+                                ? null : history.getPerformedBy().getId(),
+                        history.getPerformedBy() == null
+                                ? "System" : history.getPerformedBy().getName(),
+                        history.getAction(),
+                        history.getOldValue(),
+                        history.getNewValue(),
+                        history.getCreatedAt()
+                ))
+                .toList();
     }
 }

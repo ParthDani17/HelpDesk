@@ -160,4 +160,15 @@ public class TicketController {
 
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/{ticketId}/history")
+    @PreAuthorize("@ticketAuthorizationService.canAccessTicket(#ticketId, authentication)")
+    public ResponseEntity<List<TicketHistoryResponse>> getTicketHistory(
+            @PathVariable UUID ticketId
+    ) {
+        List<TicketHistoryResponse> response =
+                ticketService.getTicketHistory(ticketId);
+
+        return ResponseEntity.ok(response);
+    }
 }
