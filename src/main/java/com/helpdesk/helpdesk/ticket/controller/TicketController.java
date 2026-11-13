@@ -1,8 +1,7 @@
 package com.helpdesk.helpdesk.ticket.controller;
 
 import com.helpdesk.helpdesk.security.user.HelpDeskUserDetails;
-import com.helpdesk.helpdesk.ticket.dto.TicketCreateRequest;
-import com.helpdesk.helpdesk.ticket.dto.TicketResponse;
+import com.helpdesk.helpdesk.ticket.dto.*;
 import com.helpdesk.helpdesk.ticket.service.TicketService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -10,10 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import com.helpdesk.helpdesk.ticket.dto.TicketAssignmentRequest;
-import com.helpdesk.helpdesk.ticket.dto.TicketStatusUpdateRequest;
-import com.helpdesk.helpdesk.ticket.dto.TicketPriorityUpdateRequest;
-import com.helpdesk.helpdesk.ticket.dto.TicketCategoryUpdateRequest;
+
 import java.util.UUID;
 import java.util.List;
 
@@ -126,6 +122,39 @@ public class TicketController {
         TicketResponse response = ticketService.updateTicketCategory(
                 ticketId,
                 request.categoryId(),
+                userDetails.getId()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{ticketId}/reopen")
+    @PreAuthorize("""
+        hasRole('ADMIN') or
+        (hasRole('USER') and @ticketService.isTicketCreator(#ticketId, authentication.principal.id))
+        """)
+    public ResponseEntity<TicketResponse> reopenTicket(
+            @PathVariable UUID ticketId,
+            @Valid @RequestBody TicketReopenRequest request,
+            @AuthenticationPrincipal HelpDeskUserDetails userDetails
+    ) {
+        TicketResponse response = ticketService.reopenTicket(
+                ticketId,
+                request.reason(),
+                userDetails.getId()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{ticketId}/close")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<TicketResponse> closeTicket(
+            @PathVariable UUID ticketId,
+            @AuthenticationPrincipal HelpDeskUserDetails userDetails
+    ) {
+        TicketResponse response = ticketService.closeTicket(
+                ticketId,
                 userDetails.getId()
         );
 

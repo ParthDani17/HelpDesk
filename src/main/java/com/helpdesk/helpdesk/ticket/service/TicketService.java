@@ -347,4 +347,78 @@ public class TicketService {
 
         return mapToTicketResponse(savedTicket);
     }
+
+    @Transactional
+    public TicketResponse reopenTicket(
+            UUID ticketId,
+            String reason,
+            UUID performedById
+    ) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
+
+        User performedBy = userRepository.findById(performedById)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        TicketStatus oldStatus = ticket.getStatus();
+
+        if (oldStatus != TicketStatus.RESOLVED) {
+            throw new ConflictException("Only resolved tickets can be reopened");
+        }
+
+        ticket.setStatus(TicketStatus.REOPENED);
+
+        Ticket savedTicket = ticketRepository.save(ticket);
+
+        TicketHistory history = new TicketHistory(
+                savedTicket,
+                performedBy,
+                TicketHistoryAction.REOPENED,
+                oldStatus.name(),
+                reason.trim()
+        );
+
+        ticketHistoryRepository.save(history);
+
+        return mapToTicketResponse(savedTicket);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isTicketCreator(UUID ticketId, UUID userId) {
+        return ticketRepository.findById(ticketId)
+                .map(ticket -> ticket.getCreator().getId().equals(userId))
+                .orElse(false);
+    }
+
+    @Transactional
+    public TicketResponse closeTicket(UUID ticketId, UUID performedById) {
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found"));
+
+        User performedBy = userRepository.findById(performedById)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        TicketStatus oldStatus = ticket.getStatus();
+
+        if (oldStatus != TicketStatus.RESOLVED) {
+            throw new ConflictException("Only resolved tickets can be closed");
+        }
+
+        ticket.setStatus(TicketStatus.CLOSED);
+
+        Ticket savedTicket = ticketRepository.save(ticket);
+
+        TicketHistory history = new TicketHistory(
+                savedTicket,
+                performedBy,
+                TicketHistoryAction.STATUS_CHANGED,
+                oldStatus.name(),
+                TicketStatus.CLOSED.name()
+        );
+
+        ticketHistoryRepository.save(history);
+
+        return mapToTicketResponse(savedTicket);
+    }
 }
